@@ -27,7 +27,7 @@ results <- sapply(group_sizes, function(n) {
 })
 ```
 \
-At last we output Image.
+At last we output image.
 \
 ```{r}
 # Plot the probability as a function of group size
@@ -35,4 +35,74 @@ plot(group_sizes, results, type = "o", xlab = "Group Size", ylab = "Probability"
      main = "Relationship Between Group Size and Probability")
 ```
 \
-------------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+\
+## Problem 1
+\
+first power analysis through simulation.
+\
+```{r}
+library(broom)
+
+# Define the power simulation function
+power_analysis <- function(mu, n = 30, sigma = 5, alpha = 0.05) {
+  p_values <- replicate(5000, {
+    data <- rnorm(n, mean = mu, sd = sigma)
+    t_result <- tidy(t.test(data, mu = 0))
+    t_result$p.value
+  })
+  power <- mean(p_values < alpha)
+  return(power)
+}
+
+true_mus <- 0:6
+power_results <- sapply(true_mus, power_analysis)
+```
+\
+Then output image.
+\
+```{r}
+# Plot the power curve
+plot(true_mus, power_results, type = "o", xlab = "True Mean µ", ylab = "Power",
+     main = "Relationship between True Mean µ and Power")
+
+```
+\
+Then generate simulation results for mean estimation, compute the average estimated mean for each true mean, and compute the average estimated mean for the rejection of the null hypothesis.
+\
+```{r}
+mu_estimates <- lapply(true_mus, function(mu) {
+  replicate(5000, {
+    data <- rnorm(30, mean = mu, sd = 5)
+    t_result <- tidy(t.test(data, mu = 0))
+    list(mu_hat = mean(data), p_value = t_result$p.value)
+  }, simplify = FALSE)
+})
+# Compute the average estimated mean under each true mean
+avg_mu_hat <- sapply(mu_estimates, function(sim_list) {
+  mean(sapply(sim_list, function(x) x$mu_hat))
+})
+
+# Calculates the average estimated mean when the null was rejected 
+avg_mu_hat_rejected <- sapply(mu_estimates, function(sim_list) {
+# Filter out samples that reject the null
+  rejected_samples <- Filter(function(x) x$p_value < 0.05, sim_list)
+  if (length(rejected_samples) > 0) {
+    mean(sapply(rejected_samples, function(x) x$mu_hat))
+  } else {
+    NA
+  }
+})
+```
+\
+Finally we can plot the estimates.
+\
+```{r}
+plot(true_mus, avg_mu_hat, type = "o", xlab = "True Mean µ", ylab = "Average µ Estimate",
+     main = "Relationship between Average µ Estimate and True Mean µ")
+lines(true_mus, avg_mu_hat_rejected, type = "o", col = "red")
+legend("topleft", legend = c("All Samples", "Rejected Null Samples"), col = c("black", "red"), lty = 1)
+```
+\
+-----------------------------------------------------------------------------
+\
