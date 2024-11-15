@@ -1,0 +1,38 @@
+---
+title: "p8105_hw5_cr3442"
+author: "Cheng"
+date: "2024-11-15"
+output: github_document
+---
+
+## Problem 1
+\
+First simulate random birthdays and check for duplicate birthdays.
+\
+```{r}
+# Simulate random birthdays and check for duplicates
+birthday_simulation <- function(n) {
+  birthdays <- sample(1:365, n, replace = TRUE)
+  return(any(duplicated(birthdays)))
+}
+```
+\
+Then use functions to simulate the probability that at least two people in multiple groups have the same birthday.
+\
+```{r}
+set.seed(123) # Ensure reproducibility
+group_sizes <- 2:50
+results <- sapply(group_sizes, function(n) {
+  mean(replicate(10000, birthday_simulation(n)))
+})
+```
+\
+At last we output Image.
+\
+```{r}
+# Plot the probability as a function of group size
+plot(group_sizes, results, type = "o", xlab = "Group Size", ylab = "Probability",
+     main = "Relationship Between Group Size and Probability")
+```
+\
+------------------------------------------------------------------------------
