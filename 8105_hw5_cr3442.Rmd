@@ -10,9 +10,10 @@ library(tidyr)
 library(purrr)
 library(broom)
 library(ggplot2)
-library(readr) # Ensure readr is loaded for read_csv function
+library(readr) 
 library(stringr)
 library(forcats)
+library(magrittr)
 ```
 
 ## Problem 1
@@ -45,9 +46,11 @@ plot(group_sizes, results, type = "o", xlab = "Group Size", ylab = "Probability"
      main = "Relationship Between Group Size and Probability")
 ```
 \
------------------------------------------------------------------------------
+### Comments: 
 \
-## Problem 1
+The probability curve in the figure shows an S-shaped growth trend, which means that when the group size is increased, the probability increases slowly at first, then increases rapidly, and then levels off. The probability exceeds 0.5 when the group size reaches about 23 people. This means that with 23 people, the probability that at least two people share the same birthday is more than 50%.
+
+## Problem 2
 \
 first power analysis through simulation.
 \
@@ -75,6 +78,10 @@ plot(true_mus, power_results, type = "o", xlab = "True Mean µ", ylab = "Power",
      main = "Relationship between True Mean µ and Power")
 
 ```
+\
+### Comments
+\
+As μ increases, the power increases and approaches 1 when μ is greater than or equal to 4, indicating that the null hypothesis is almost always correctly rejected. This means that increasing the effect size when we design an experiment can effectively increase power, that is, increase the probability of rejecting the null hypothesis in the corresponding test.
 \
 Then generate simulation results for mean estimation, compute the average estimated mean for each true mean, and compute the average estimated mean for the rejection of the null hypothesis.
 \
@@ -112,8 +119,12 @@ lines(true_mus, avg_mu_hat_rejected, type = "o", col = "red")
 legend("topleft", legend = c("All Samples", "Rejected Null Samples"), col = c("black", "red"), lty = 1)
 ```
 \
------------------------------------------------------------------------------
+### Comments:
 \
+The average μ̂ increases as the true mean μ increases, and is approximately linearly related to μ, that is, in each simulation, the estimated mean should be close to the true mean. For samples that reject the null hypothesis, the average μ̂ is usually larger than the μ̂ in the overall sample, which means that when the power is high, the estimated value tends to be far away from the null hypothesis. 
+\
+The sample average of μ̂ across tests for which the null is rejected does not approximately equal to the true value of μ. In the sample, the data used only when the null hypothesis is rejected has a selection bias, which causes the average μ̂ of these samples to be higher than the true μ. This means that in a conditional selection sample (that is, only those samples with significant p values are selected), the estimated value will be significantly higher than the overall mean.
+
 ## Problem 3
 \
 First read in the data.
@@ -133,7 +144,7 @@ homicide_df =
   filter(city_state != "Tulsa, AL")
 ```
 \
-then summarize the total number of unsolved cases in each of the cities.
+Then summarize the total number of unsolved cases in each of the cities.
 \
 ```{r}
 aggregate_df = 
@@ -143,6 +154,15 @@ aggregate_df =
     hom_total = n(),
     hom_unsolved = sum(resolved == "unsolved")
   )
+```
+\
+Then do a prop test for Baltimore, MD.
+\
+```{r}
+prop.test(
+  aggregate_df %>% filter(city_state == "Baltimore, MD") %>% pull(hom_unsolved), 
+  aggregate_df %>% filter(city_state == "Baltimore, MD") %>% pull(hom_total)) %>% 
+  broom::tidy()
 ```
 \
 Next run prop.test for each of the cities in the dataset.
