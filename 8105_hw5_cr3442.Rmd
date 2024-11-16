@@ -4,6 +4,16 @@ author: "Cheng"
 date: "2024-11-15"
 output: github_document
 ---
+```{r load}
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(broom)
+library(ggplot2)
+library(readr) # Ensure readr is loaded for read_csv function
+library(stringr)
+library(forcats)
+```
 
 ## Problem 1
 \
@@ -42,8 +52,6 @@ plot(group_sizes, results, type = "o", xlab = "Group Size", ylab = "Probability"
 first power analysis through simulation.
 \
 ```{r}
-library(broom)
-
 # Define the power simulation function
 power_analysis <- function(mu, n = 30, sigma = 5, alpha = 0.05) {
   p_values <- replicate(5000, {
@@ -106,3 +114,65 @@ legend("topleft", legend = c("All Samples", "Rejected Null Samples"), col = c("b
 \
 -----------------------------------------------------------------------------
 \
+## Problem 3
+\
+First read in the data.
+```{r}
+# Read and clean the raw data
+homicide_df = 
+  read_csv("data/homicide-data.csv")%>% 
+  mutate(
+    city_state = str_c(city, state, sep = ", "),
+    resolved = case_when(
+      disposition == "Closed without arrest" ~ "unsolved",
+      disposition == "Open/No arrest"        ~ "unsolved",
+      disposition == "Closed by arrest"      ~ "solved"
+    )
+  ) %>% 
+  select(city_state, resolved) %>% 
+  filter(city_state != "Tulsa, AL")
+```
+\
+then summarize the total number of unsolved cases in each of the cities.
+\
+```{r}
+aggregate_df = 
+  homicide_df %>% 
+  group_by(city_state) %>% 
+  summarize(
+    hom_total = n(),
+    hom_unsolved = sum(resolved == "unsolved")
+  )
+```
+\
+Next run prop.test for each of the cities in the dataset.
+\
+```{r}
+results_df = 
+  aggregate_df %>% 
+  mutate(
+    prop_tests = map2(.x = hom_unsolved, .y = hom_total, ~prop.test(x = .x, n = .y)),
+    tidy_tests = map(prop_tests, broom::tidy)
+  ) %>% 
+  
+# Extract both the proportion of unsolved homicides and the confidence interval for each
+  unnest(tidy_tests) %>% 
+  select(city_state, estimate, conf.low, conf.high)
+```
+\
+Finally we can create a plot that shows the estimates and CIs for each city.
+\
+```{r}
+results_df %>% 
+  mutate(city_state = fct_reorder(city_state, estimate)) %>% 
+  ggplot(aes(x = city_state, y = estimate)) +
+  geom_point() + 
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high)) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  labs(
+    title = "Proportion of Unsolved Homicides by City",
+    x = "City",
+    y = "Estimated Proportion of Unsolved Homicides",
+    caption = "Data Source: The Washington Post"
+  )
+```
